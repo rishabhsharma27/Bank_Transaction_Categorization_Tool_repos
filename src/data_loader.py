@@ -27,9 +27,9 @@ def sp500_year_split():
     for year, group in df.groupby('Year'):
     # Optional: Drop the temporary 'Year' column if you want the original schema
         output_df = group.drop(columns=['Year'])
-
+        
     # Define a clean filename for each year
-        filename = data_path / f'sp500_stocks_{int(year)}.csv'
+        filename = data_path / f'sp500_stocks_{year}.csv'
 
     # Save to CSV (or .to_parquet() for compressed columnar storage)
         output_df.to_csv(filename, index=False)
