@@ -10,7 +10,7 @@ import matplotlib.dates as mdates
 def plot_company_preditions():
     current_dir = Path(__file__).resolve().parent
     root_dir = current_dir.parent
-    data_path = root_dir / "reports"
+    data_path = root_dir / "reports/plots"
 
     df = pd.read_csv("E:\\Portfolio Optimization & Market Trend Predictor repos\\reports\\all_companies_predictions.csv")  
     df['Date'] = pd.to_datetime(df['Date'])
