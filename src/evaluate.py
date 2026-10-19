@@ -1,42 +1,35 @@
-import json
-from pathlib import Path
 import numpy as np
-from sklearn.metrics import roc_auc_score, roc_curve, classification_report
+import pandas as pd
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 
-def calculate_ks_statistic(y_true, y_pred_proba):
-    fpr, tpr, thresholds = roc_curve(y_true, y_pred_proba)
-    ks = np.max(tpr - fpr)
-    return ks
+# 1. Load the saved master predictions file
+df = pd.read_csv('E:\\Portfolio Optimization & Market Trend Predictor repos\\reports\\all_companies_predictions.csv')
 
-def evaluate_and_save_model(model, X_test, y_test, output_filename="model_metrics.json"):
-    """
-    Computes evaluation metrics and saves them to a file in the reports/ directory.
-    """
-    # 1. Generate predictions and metrics
-    y_pred_proba = model.predict_proba(X_test)[:, 1]
-    
-    auc = roc_auc_score(y_test, y_pred_proba)
-    gini = (2 * auc) - 1
-    ks = calculate_ks_statistic(y_test, y_pred_proba)
-    
-    metrics = {
-        "ROC_AUC": round(float(auc), 4),
-        "Gini_Coefficient": round(float(gini), 4),
-        "KS_Statistic": round(float(ks), 4)
-    }
-    
-    print("\n--- Model Evaluation Report ---")
-    for k, v in metrics.items():
-        print(f"{k}: {v}")
 
-    # 2. Set up reports directory and save file
-    current_dir = Path(__file__).resolve().parent
-    reports_dir = current_dir.parent / "reports"
-    reports_dir.mkdir(exist_ok=True)
-    
-    file_path = reports_dir / output_filename
-    with open(file_path, "w") as f:
-        json.dump(metrics, f, indent=4)
-        
-    print(f"✅ Evaluation metrics saved successfully to: {file_path}")
-    return metrics
+# 2. Define a function to calculate metrics for a group of data
+def evaluate_predictions(group):
+  actual = group['Actual_Price']
+  predicted = group['Predicted_Price']
+
+  mae = mean_absolute_error(actual, predicted)
+  rmse = np.sqrt(mean_squared_error(actual, predicted))
+  # MAPE: Mean Absolute Percentage Error (%)
+  mape = np.mean(np.abs((actual - predicted) / actual)) * 100
+
+  return pd.Series({'MAE': mae, 'RMSE': rmse, 'MAPE(%)': mape})
+
+
+# 3. Apply metrics calculation grouped by Ticker
+metrics_df = df.groupby('Ticker').apply(evaluate_predictions).reset_index()
+
+# Round for clean readability
+metrics_df[['MAE', 'RMSE', 'MAPE(%)']] = metrics_df[['MAE', 'RMSE', 'MAPE(%)']].round(
+    4
+)
+
+print('--- Model Performance Summary per Company ---')
+print(metrics_df.to_string(index=False))
+
+# 4. (Optional) Save evaluation metrics to a new CSV file
+metrics_df.to_csv('E:\\Portfolio Optimization & Market Trend Predictor repos\\reports\\model_evaluation_metrics.csv', index=False)
+print('\nEvaluation metrics successfully saved to model_evaluation_metrics.csv!')
