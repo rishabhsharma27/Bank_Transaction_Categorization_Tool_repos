@@ -33,31 +33,26 @@ def train_model():
     # 1. Generate or Load Data (Replace with pd.read_csv('your_stock_data.csv'))
     df = pd.read_csv('data/sp500_stocks_2025.csv')  # Ensure your CSV has 'Date' and 'Close' columns 
 
-    # 2. Preprocess and Scale Data
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    scaled_data = scaler.fit_transform(df[['close']])
 
     # 3. Create Time-Series Sequences (Lookback Window)
     # LSTMs require 3D input: [samples, time_steps, features]
 
     LOOK_BACK = 60
-    X, y = create_sequences(scaled_data, LOOK_BACK)
-
-
-    # Reshape X to be [samples, time_steps, features]
+    X, y, meta_df, scalers_dict = create_grouped_sequences_with_metadata(df, LOOK_BACK)
     X = np.reshape(X, (X.shape[0], X.shape[1], 1))
 
     # Split into Train and Test sets (80/20 split)
     train_size = int(len(X) * 0.8)
     X_train, X_test = X[:train_size], X[train_size:]
     y_train, y_test = y[:train_size], y[train_size:]
-"""
+
+
     # 4. Build the LSTM Architecture
     model = Sequential([
         Input(shape=(X_train.shape[1], 1)),
-        LSTM(5, return_sequences=True),
-        LSTM(5, return_sequences=False),
-        Dense(5),
+        LSTM(1, return_sequences=True),
+        LSTM(1, return_sequences=False),
+        Dense(1),
         Dense(1),
     ])
 
@@ -82,38 +77,87 @@ def train_model():
 
 
     print(f"📁 Model saved to: {model_path}")
-"""
+    
+    
 
     model_path = models_dir / "lstm_stock_model.pkl"
-
+  
     with open(model_path, "rb") as f:
         model = pickle.load(f)
 
     # 7. Make Predictions & Inverse Scale
+
     predictions = model.predict(X_test)
-    predictions = scaler.inverse_transform(predictions)
-    y_test_scaled = scaler.inverse_transform(y_test.reshape(-1, 1))
 
-    # 8. Plot Results
-    plt.figure(figsize=(12, 6))
-    plt.plot(df['date'].iloc[-len(y_test) :], y_test_scaled, label='Actual Price')
-    plt.plot(
-        df['date'].iloc[-len(y_test) :], predictions, label='LSTM Predicted Price'
-    )
-    plt.title('Stock Trend Prediction with LSTM')
-    plt.xlabel('Date')
-    plt.ylabel('Price')
-    plt.legend()
-    plt.show()
-    plt.savefig(root_dir / "reports" / 'lstm_stock_prediction.png', dpi=300, bbox_inches="tight")
+    inverse_transform_predictions(predictions, scalers_dict, meta_df, y_test)
 
-def create_sequences(dataset, look_back=60):
-    X, y = [], []
-    for i in range(look_back, len(dataset)):
-        X.append(dataset[i - look_back : i, 0])
-        y.append(dataset[i, 0])
-        
-    return np.array(X), np.array(y)
+
+
+def create_grouped_sequences_with_metadata(df, look_back=60):
+    X_all , y_all = [], []  
+    metadata = []
+    scalers = {}  # 1. Initialize an empty dictionary to store scalers
+    count = round(df['symbol'].count()/df['symbol'].nunique())
+    
+    for ticker, group in df.groupby('symbol'):
+        # Sort just to be safe on chronological order
+        group = group.sort_values('date')
+        prices = group[['close']].values
+        dates = group['date'].values
+        if len(prices) !=count:
+            continue
+        if len(prices) > look_back:
+        # 2. Create and fit a unique scaler for THIS specific company
+            scaler = MinMaxScaler(feature_range=(0, 1))
+            scaled_prices = scaler.fit_transform(prices)
+
+        # 3. Store the fitted scaler in the dictionary using the ticker name
+            scalers[ticker] = scaler
+
+        # Create the sliding windows
+            for i in range(look_back, len(scaled_prices)):
+                X_all.append(scaled_prices[i - look_back : i, 0])
+                y_all.append(scaled_prices[i, 0])
+                metadata.append({'Ticker': ticker, 'Date': dates[i]})
+
+    return (
+      np.array(X_all),
+      np.array(y_all),
+      pd.DataFrame(metadata),
+      scalers,)
+
+
+    
+def inverse_transform_predictions(predictions, scalers_dict, metadata, y_test):
+    # 1. Align test metadata with your predictions and actuals
+    test_meta_df = metadata.iloc[-len(predictions) :].copy()
+    test_meta_df['Predicted_Price'] = predictions.flatten()
+    test_meta_df['Actual_Price'] = y_test.flatten()
+
+    # 2. Inverse transform all companies using their respective scalers
+    all_inverse_transformed = []
+
+    for ticker, group in test_meta_df.groupby('Ticker'):
+        if ticker in scalers_dict:
+            scaler = scalers_dict[ticker]
+
+            # Reshape to 2D for MinMaxScaler inverse_transform
+            preds_2d = group['Predicted_Price'].values.reshape(-1, 1)
+            actuals_2d = group['Actual_Price'].values.reshape(-1, 1)
+
+            group_copy = group.copy()
+            group_copy['Predicted_Price'] = scaler.inverse_transform(preds_2d).flatten()
+            group_copy['Actual_Price'] = scaler.inverse_transform(actuals_2d).flatten()
+
+            all_inverse_transformed.append(group_copy)
+
+    # 3. Combine into one master results dataframe
+    master_results_df = pd.concat(all_inverse_transformed, ignore_index=True)
+
+    # 4. Save to a CSV file
+    output_file = 'E:\\Portfolio Optimization & Market Trend Predictor repos\\reports\\all_companies_predictions.csv'
+    master_results_df.to_csv(output_file, index=False)
+    print(f'Master results successfully saved to {output_file}!')
 
 
 if __name__ == "__main__":
