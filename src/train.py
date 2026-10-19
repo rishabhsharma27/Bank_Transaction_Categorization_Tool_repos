@@ -50,9 +50,9 @@ def train_model():
     # 4. Build the LSTM Architecture
     model = Sequential([
         Input(shape=(X_train.shape[1], 1)),
-        LSTM(1, return_sequences=True),
-        LSTM(1, return_sequences=False),
-        Dense(1),
+        LSTM(50, return_sequences=True),
+        LSTM(50, return_sequences=False),
+        Dense(125),
         Dense(1),
     ])
 
@@ -64,7 +64,7 @@ def train_model():
         X_train,
         y_train,
         batch_size=32,
-        epochs=1,
+        epochs=20,
         validation_data=(X_test, y_test),
         verbose=1,
     )
