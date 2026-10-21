@@ -10,10 +10,13 @@ from pathlib import Path
 import joblib
 import sys
 
+
 root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
 
 from src.plotting_price_model import plot_price_accuracy
+
+from src.evaluate_amount_model import eval_price_accuracy
 
 
 
@@ -25,17 +28,21 @@ def train_amount():
 
     df = pd.read_csv(data_path / "spending_patterns_detailed.csv")  # Ensure your CSV has 'Date' and 'Close' columns   
 
-    bins = [0, 100, 1000, 10000, float('inf')]
-    labels = ['100', '1000', '10000', '100000']
+    bins = [0,	500,	1000,	1500,	2000,	2500,	3000,	3500,	4000,	4500,	
+            5000,	5500,	6000,	6500,	7000,	7500,	8000,	8500,	9000,	9500,	10000, float('inf')]
+
+    #labels = ['1', '2', '3', '4','5', '6', '7', '8', '9', '10', '11','12', '13', '14', '15', '16', '17', '18', '19' ]
+
+    labels = [str(i) for i in range(1, len(bins))]
 
     # Apply custom cut
-    df['Range'] = pd.cut(df['Total Spent'], bins=bins, labels=labels, right=True)
-
+    df['Range'] = pd.cut(df['Price Per Unit'], bins=bins, labels=labels, right=True)
+    print(df.head())
     #df['Payment category'] = df['Payment Method'].replace({'Credit Card': 'Card', 'Debit Card': 'Card'})
 
-    df['Item_join'] = df[['Item', 'Category', 'Location']].agg(' '.join, axis=1)
+    df['Item_join'] = df[['Item', 'Category', 'Location', 'Range']].agg(' '.join, axis=1)
 
-    df = df[df['Total Spent']< 1000]
+    df = df[df['Total Spent']< 10000]
 
     X = df[['Item_join','Item']]
     y = df['Price Per Unit']
@@ -68,7 +75,7 @@ def train_amount():
     
     plot_price_accuracy((model_path / 'Amount_model.pkl'), X_test, y_test)
 
-
+    eval_price_accuracy((model_path / 'Amount_model.pkl'), X_test, y_test)
 
 if __name__ == "__main__":
     train_amount()

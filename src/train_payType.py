@@ -16,7 +16,7 @@ root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
 
 from src.plotting_Confusion_matrix import plot_model_accuracy
-
+from sklearn.metrics import classification_report
 
 def train_payType():
     current_dir = Path(__file__).resolve().parent
@@ -65,7 +65,7 @@ def train_payType():
 
     plot_model_accuracy((model_path / 'PayType_model.pkl'), X_test, y_test)
 
-
+    print(classification_report(y_test, predictions))
 
 if __name__ == "__main__":
     train_payType()

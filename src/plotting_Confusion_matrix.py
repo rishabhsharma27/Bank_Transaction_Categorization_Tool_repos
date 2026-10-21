@@ -9,7 +9,6 @@ import joblib
 import os
 from sklearn.model_selection import train_test_split
 
-# Ticker,Date,Predicted_Price,Actual_Price
 def plot_model_accuracy(model_path, X_test, y_test):
 
     model = joblib.load(model_path)

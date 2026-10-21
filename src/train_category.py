@@ -9,6 +9,7 @@ from sklearn.pipeline import Pipeline
 from pathlib import Path
 import joblib
 import sys
+from sklearn.metrics import classification_report
 
 root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
@@ -58,6 +59,7 @@ def train_category_model():
 
     plot_model_accuracy((model_path / 'Category_model.pkl'), X_test, y_test)
 
+    print(classification_report(y_test, predictions))
 
 
 

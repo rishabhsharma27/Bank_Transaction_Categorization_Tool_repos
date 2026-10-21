@@ -7,9 +7,8 @@ import matplotlib.dates as mdates
 from sklearn.metrics import ConfusionMatrixDisplay
 import joblib
 import os
-from sklearn.model_selection import train_test_split
 
-# Ticker,Date,Predicted_Price,Actual_Price
+
 def plot_price_accuracy(model_path, X_test, y_test):
 
     model = joblib.load(model_path)
@@ -36,7 +35,7 @@ def plot_price_accuracy(model_path, X_test, y_test):
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.tight_layout()
-    plt.show()
+    
 
     # Extract the filename
     filename = os.path.basename(model_path)
