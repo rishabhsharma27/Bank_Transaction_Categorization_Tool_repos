@@ -1,4 +1,6 @@
-Data Source: https://www.kaggle.com/datasets/darkmatternet/s-and-p-500-stocks-25-years-of-data-updated-daily/data
+Data Source: https://www.kaggle.com/datasets/ahmedmohamed2003/spending-habits
 
-Only used the data for 2025, as using 25 years of data is too much for my machine to process.
-But with a source name change, you should be able to run on the entire dataset. 
+Dataset Overview
+The Spending Patterns Dataset provides a synthetic representation of consumer spending behavior across various categories. 
+This dataset is ideal for exploratory data analysis, statistical modeling, and machine learning applications related to 
+financial forecasting, customer segmentation, or consumer behavior analysis.
